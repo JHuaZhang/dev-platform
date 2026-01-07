@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 
 const Layout = lazy(() => import('@/components/Layout'));
 const AppList = lazy(() => import('@/pages/AppList'));
+const CreateApp = lazy(() => import('@/pages/CreateApp'));
 const AppDetail = lazy(() => import('@/pages/AppDetail'));
 const IterationHistory = lazy(() => import('@/pages/IterationHistory'));
 
@@ -20,35 +21,37 @@ const routeConfig: RouteConfig[] = [
     children: [
       {
         path: '',
-        redirect: '/apps',
+        redirect: '/apps'
       },
       {
         path: 'apps',
-        element: AppList,
+        element: AppList
+      },
+      {
+        path: 'apps/create',
+        element: CreateApp
       },
       {
         path: 'apps/:appId',
-        element: AppDetail,
+        element: AppDetail
       },
       {
         path: 'apps/:appId/history',
-        element: IterationHistory,
-      },
-    ],
-  },
+        element: IterationHistory
+      }
+    ]
+  }
 ];
 
 const Loading = () => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      fontSize: '16px',
-      color: '#667eea',
-    }}
-  >
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100vh',
+    fontSize: '16px',
+    color: '#667eea'
+  }}>
     加载中...
   </div>
 );
@@ -57,7 +60,11 @@ const renderRoutes = (routes: RouteConfig[]) => {
   return routes.map((route, index) => {
     if (route.redirect) {
       return (
-        <Route key={index} path={route.path} element={<Navigate to={route.redirect} replace />} />
+        <Route
+          key={index}
+          path={route.path}
+          element={<Navigate to={route.redirect} replace />}
+        />
       );
     }
 
@@ -83,7 +90,9 @@ const renderRoutes = (routes: RouteConfig[]) => {
 const AppRouter = () => {
   return (
     <BrowserRouter>
-      <Routes>{renderRoutes(routeConfig)}</Routes>
+      <Routes>
+        {renderRoutes(routeConfig)}
+      </Routes>
     </BrowserRouter>
   );
 };

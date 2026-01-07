@@ -1,30 +1,15 @@
 import { observer } from 'mobx-react-lite';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { useStores } from '@/stores';
 import styles from './index.module.css';
 
 const AppList = observer(() => {
   const { appStore } = useStores();
   const navigate = useNavigate();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newAppName, setNewAppName] = useState('');
-  const [newAppDesc, setNewAppDesc] = useState('');
-
-  const handleCreateApp = () => {
-    if (!newAppName.trim()) {
-      alert('请输入应用名称');
-      return;
-    }
-    appStore.addApp({
-      name: newAppName,
-      description: newAppDesc,
-      gitlabUrl: '',
-      jenkinsUrl: ''
-    });
-    setShowCreateModal(false);
-    setNewAppName('');
-    setNewAppDesc('');
+  
+  const getOngoingIterationsCount = (appId: number) => {
+    return appStore.getIterationsByAppId(appId)
+      .filter(i => i.status === 'building' || i.status === 'pending').length;
   };
 
   return (
@@ -36,7 +21,7 @@ const AppList = observer(() => {
         </div>
         <button 
           className={styles.createBtn}
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => navigate('/apps/create')}
         >
           <span className={styles.createIcon}>+</span>
           新建应用
@@ -50,95 +35,55 @@ const AppList = observer(() => {
           <p className={styles.emptyDesc}>创建你的第一个应用，开始管理代码迭代</p>
           <button 
             className={styles.emptyBtn}
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => navigate('/apps/create')}
           >
             立即创建
           </button>
         </div>
       ) : (
         <div className={styles.appGrid}>
-          {appStore.appList.map(app => (
-            <div 
-              key={app.id} 
-              className={styles.appCard}
-              onClick={() => navigate(`/apps/${app.id}`)}
-            >
-              <div className={styles.cardHeader}>
-                <div className={styles.appIcon}>
-                  {app.name.charAt(0).toUpperCase()}
-                </div>
-                <div className={styles.appInfo}>
-                  <h3 className={styles.appName}>{app.name}</h3>
-                  <p className={styles.appDesc}>{app.description || '暂无描述'}</p>
-                </div>
-              </div>
-              <div className={styles.cardStats}>
-                <div className={styles.statItem}>
-                  <span className={styles.statLabel}>迭代次数</span>
-                  <span className={styles.statValue}>{app.iterationCount}</span>
-                </div>
-                <div className={styles.statItem}>
-                  <span className={styles.statLabel}>最后更新</span>
-                  <span className={styles.statValue}>{app.lastUpdate}</span>
-                </div>
-              </div>
-              <div className={styles.cardFooter}>
-                <span className={styles.statusBadge}>运行中</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showCreateModal && (
-        <div className={styles.modal} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>新建应用</h2>
-              <button 
-                className={styles.closeBtn}
-                onClick={() => setShowCreateModal(false)}
+          {appStore.appList.map(app => {
+            const ongoingIterations = getOngoingIterationsCount(app.id);
+            
+            return (
+              <div 
+                key={app.id} 
+                className={`${styles.appCard} ${!app.hasPermission ? styles.appCardDisabled : ''}`}
+                onClick={() => app.hasPermission && navigate(`/apps/${app.id}`)}
               >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>应用名称</label>
-                <input
-                  type="text"
-                  className={styles.input}
-                  placeholder="请输入应用名称"
-                  value={newAppName}
-                  onChange={e => setNewAppName(e.target.value)}
-                />
+                <div className={styles.cardHeader}>
+                  <div className={styles.appIcon}>
+                    {app.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className={styles.appInfo}>
+                    <h3 className={styles.appName}>{app.name}</h3>
+                    <p className={styles.appDesc}>{app.description || '暂无描述'}</p>
+                  </div>
+                </div>
+                <div className={styles.cardStats}>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>总迭代</span>
+                    <span className={styles.statValue}>{app.iterationCount}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>进行中</span>
+                    <span className={styles.statValue}>{ongoingIterations}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>最后更新</span>
+                    <span className={styles.statValue}>{app.lastUpdate.slice(5)}</span>
+                  </div>
+                </div>
+                <div className={styles.cardFooter}>
+                  {app.hasPermission ? (
+                    <span className={styles.statusBadge}>运行中</span>
+                  ) : (
+                    <span className={styles.statusBadgeDisabled}>无权限</span>
+                  )}
+                </div>
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>应用描述</label>
-                <textarea
-                  className={styles.textarea}
-                  placeholder="请输入应用描述（可选）"
-                  rows={3}
-                  value={newAppDesc}
-                  onChange={e => setNewAppDesc(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button 
-                className={styles.cancelBtn}
-                onClick={() => setShowCreateModal(false)}
-              >
-                取消
-              </button>
-              <button 
-                className={styles.confirmBtn}
-                onClick={handleCreateApp}
-              >
-                创建
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
     </div>

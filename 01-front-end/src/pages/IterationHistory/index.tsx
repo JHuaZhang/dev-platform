@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStores } from '@/stores';
+import { IterationStatus, PipelineStageStatus } from '@/types/enum';
 import styles from './index.module.css';
 
 const IterationHistory = observer(() => {
@@ -21,30 +22,36 @@ const IterationHistory = observer(() => {
     );
   }
 
-  const statusConfig = {
-    pending: { label: '待构建', color: '#faad14', bg: '#2d2d2d' },
-    building: { label: '构建中', color: '#1890ff', bg: '#2d2d2d' },
-    success: { label: '构建成功', color: '#52c41a', bg: '#2d2d2d' },
-    failed: { label: '构建失败', color: '#f5222d', bg: '#2d2d2d' }
-  };
-
-  const getPipelineStages = (status: string) => {
+  const getPipelineStages = (status: IterationStatus) => {
     const stages = [
-      { name: 'Clone', icon: '📥', status: 'success' },
-      { name: 'Build', icon: '🔨', status: status === 'pending' ? 'pending' : 'success' },
-      { name: 'Test', icon: '🧪', status: status === 'building' ? 'running' : status === 'pending' ? 'pending' : status },
-      { name: 'Deploy', icon: '🚀', status: status === 'success' ? 'success' : status === 'failed' ? 'failed' : 'pending' }
+      { name: 'Clone', icon: '📥', status: PipelineStageStatus.SUCCESS },
+      { 
+        name: 'Build', 
+        icon: '🔨', 
+        status: status === IterationStatus.PENDING ? PipelineStageStatus.PENDING : PipelineStageStatus.SUCCESS 
+      },
+      { 
+        name: 'Test', 
+        icon: '🧪', 
+        status: status === IterationStatus.BUILDING 
+          ? PipelineStageStatus.RUNNING 
+          : status === IterationStatus.PENDING 
+            ? PipelineStageStatus.PENDING 
+            : status === IterationStatus.SUCCESS 
+              ? PipelineStageStatus.SUCCESS 
+              : PipelineStageStatus.FAILED
+      },
+      { 
+        name: 'Deploy', 
+        icon: '🚀', 
+        status: status === IterationStatus.SUCCESS 
+          ? PipelineStageStatus.SUCCESS 
+          : status === IterationStatus.FAILED 
+            ? PipelineStageStatus.FAILED 
+            : PipelineStageStatus.PENDING
+      }
     ];
     return stages;
-  };
-
-  const getStageColor = (status: string) => {
-    switch (status) {
-      case 'success': return '#52c41a';
-      case 'running': return '#1890ff';
-      case 'failed': return '#f5222d';
-      default: return '#8c8c8c';
-    }
   };
 
   return (
@@ -85,12 +92,12 @@ const IterationHistory = observer(() => {
                     <span 
                       className={styles.statusBadge}
                       style={{
-                        color: statusConfig[iteration.status].color,
-                        background: statusConfig[iteration.status].bg,
-                        border: `1px solid ${statusConfig[iteration.status].color}`
+                        color: IterationStatus.getColor(iteration.status),
+                        background: '#2d2d2d',
+                        border: `1px solid ${IterationStatus.getColor(iteration.status)}`
                       }}
                     >
-                      {statusConfig[iteration.status].label}
+                      {IterationStatus.getLabel(iteration.status)}
                     </span>
                   </div>
                   <div className={styles.cardBody}>
@@ -116,7 +123,7 @@ const IterationHistory = observer(() => {
                           <span className={styles.stageIcon}>{stage.icon}</span>
                           <span 
                             className={styles.stageName}
-                            style={{ color: getStageColor(stage.status) }}
+                            style={{ color: PipelineStageStatus.getColor(stage.status) }}
                           >
                             {stage.name}
                           </span>
