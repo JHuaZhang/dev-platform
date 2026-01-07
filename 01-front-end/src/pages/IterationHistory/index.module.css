@@ -1,0 +1,251 @@
+.iterationHistory {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 40px;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.backBtn {
+  padding: 10px 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: #f7fafc;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.appInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.appIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.appName {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.appDesc {
+  font-size: 13px;
+  color: #718096;
+}
+
+.content {
+  padding: 32px 40px;
+  background: #ffffff;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 80px 40px;
+}
+
+.emptyIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.emptyState h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: #718096;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timelineItem {
+  width: 100%;
+}
+
+.iterationCard {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.iterationCard:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.cardHeader {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cardLeft {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.branchName {
+  font-size: 15px;
+  font-weight: 500;
+  color: #2d3748;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.iterationDesc {
+  font-size: 13px;
+  color: #718096;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cardBody {
+  padding: 16px 20px;
+  background: #f7fafc;
+}
+
+.infoGrid {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.infoLabel {
+  font-size: 12px;
+  color: #718096;
+  font-weight: 400;
+}
+
+.infoValue {
+  font-size: 13px;
+  color: #2d3748;
+  font-weight: 400;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.cardFooter {
+  padding: 12px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pipelineStages {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f7fafc;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.stageIcon {
+  font-size: 14px;
+}
+
+.stageName {
+  color: #4a5568;
+  font-weight: 400;
+}
+
+.notFound {
+  text-align: center;
+  padding: 100px 40px;
+  background: white;
+  border-radius: 8px;
+  margin: 40px;
+}
+
+.notFoundIcon {
+  font-size: 80px;
+  margin-bottom: 24px;
+}
+
+.notFound h2 {
+  font-size: 24px;
+  color: #2d3748;
+  margin-bottom: 32px;
+}
+
+.notFound button {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
