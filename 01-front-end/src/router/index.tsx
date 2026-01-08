@@ -1,47 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
+import { routeConfig, type RouteItem } from './config';
 
-const Layout = lazy(() => import('@/components/Layout'));
-const AppList = lazy(() => import('@/pages/AppList'));
-const CreateApp = lazy(() => import('@/pages/CreateApp'));
-const AppDetail = lazy(() => import('@/pages/AppDetail'));
-const IterationHistory = lazy(() => import('@/pages/IterationHistory'));
-
-interface RouteConfig {
-  path: string;
-  element?: React.LazyExoticComponent<() => JSX.Element>;
-  children?: RouteConfig[];
-  redirect?: string;
-}
-
-const routeConfig: RouteConfig[] = [
-  {
-    path: '/',
-    element: Layout,
-    children: [
-      {
-        path: '',
-        redirect: '/apps'
-      },
-      {
-        path: 'apps',
-        element: AppList
-      },
-      {
-        path: 'apps/create',
-        element: CreateApp
-      },
-      {
-        path: 'apps/:appId',
-        element: AppDetail
-      },
-      {
-        path: 'apps/:appId/history',
-        element: IterationHistory
-      }
-    ]
-  }
-];
+const PrivateRoute = lazy(() => import('@/components/PrivateRoute'));
 
 const Loading = () => (
   <div style={{
@@ -56,7 +17,7 @@ const Loading = () => (
   </div>
 );
 
-const renderRoutes = (routes: RouteConfig[]) => {
+const renderRoutes = (routes: RouteItem[]) => {
   return routes.map((route, index) => {
     if (route.redirect) {
       return (
@@ -69,13 +30,21 @@ const renderRoutes = (routes: RouteConfig[]) => {
     }
 
     const Element = route.element;
+    const isLoginRoute = route.path === '/login';
+    
     const element = Element ? (
       <Suspense fallback={<Loading />}>
-        <Element />
+        {isLoginRoute ? (
+          <Element />
+        ) : (
+          <PrivateRoute>
+            <Element />
+          </PrivateRoute>
+        )}
       </Suspense>
     ) : null;
 
-    if (route.children) {
+    if (route.children && route.children.length > 0) {
       return (
         <Route key={index} path={route.path} element={element}>
           {renderRoutes(route.children)}

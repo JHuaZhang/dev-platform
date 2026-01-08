@@ -14,7 +14,8 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     strictPort: false,
-    allowedHosts: ['all', '.alibaba-inc.com']
+    allowedHosts: ['all', '.alibaba-inc.com'],
+    historyApiFallback: true
   },
   build: {
     outDir: 'dist'

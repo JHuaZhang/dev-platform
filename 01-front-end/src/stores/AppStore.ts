@@ -3,6 +3,7 @@ import { IterationStatus } from '@/types/enum';
 
 export interface App {
   id: number;
+  appId: string;
   name: string;
   description: string;
   gitlabUrl: string;
@@ -26,6 +27,7 @@ class AppStore {
   appList: App[] = [
     {
       id: 1,
+      appId: 'ec-plat',
       name: '电商平台',
       description: '主要的电商业务平台',
       gitlabUrl: 'https://gitlab.com/ecommerce',
@@ -36,6 +38,7 @@ class AppStore {
     },
     {
       id: 2,
+      appId: 'admin-sys',
       name: '管理后台',
       description: '运营管理后台系统',
       gitlabUrl: 'https://gitlab.com/admin',
@@ -88,7 +91,20 @@ class AppStore {
     makeAutoObservable(this);
   }
 
-  addApp(data: Omit<App, 'id' | 'iterationCount' | 'lastUpdate'>) {
+  generateAppId(): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  isAppIdExists(appId: string): boolean {
+    return this.appList.some(app => app.appId === appId);
+  }
+
+  addApp(data: Omit<App, 'id' | 'iterationCount' | 'lastUpdate' | 'hasPermission'>) {
     const newApp: App = {
       ...data,
       id: Date.now(),
@@ -97,6 +113,10 @@ class AppStore {
       hasPermission: true
     };
     this.appList.unshift(newApp);
+  }
+
+  getAppByAppId(appId: string): App | undefined {
+    return this.appList.find(app => app.appId === appId);
   }
 
   addIteration(appId: number, data: Omit<Iteration, 'id' | 'appId' | 'status' | 'createTime'>) {

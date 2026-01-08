@@ -5,12 +5,12 @@ import { IterationStatus, PipelineStageStatus } from '@/types/enum';
 import styles from './index.module.css';
 
 const IterationHistory = observer(() => {
-  const { appId } = useParams();
+  const { appIdentifier } = useParams();
   const navigate = useNavigate();
   const { appStore } = useStores();
 
-  const app = appStore.appList.find(a => a.id === Number(appId));
-  const iterations = appStore.getIterationsByAppId(Number(appId));
+  const app = appStore.getAppByAppId(appIdentifier || '');
+  const iterations = app ? appStore.getIterationsByAppId(app.id) : [];
 
   if (!app) {
     return (
@@ -57,7 +57,7 @@ const IterationHistory = observer(() => {
   return (
     <div className={styles.iterationHistory}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(`/apps/${appId}`)}>
+        <button className={styles.backBtn} onClick={() => navigate(`/apps/${appIdentifier}`)}>
           ← 返回
         </button>
         <div className={styles.appInfo}>

@@ -1,8 +1,11 @@
 import { observer } from 'mobx-react-lite';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStores } from '@/stores';
+import { Form, Input, Button, Modal } from 'antd';
 import styles from './index.module.css';
+
+const { TextArea } = Input;
 
 interface Template {
   id: string;
@@ -14,14 +17,57 @@ interface Template {
 const CreateApp = observer(() => {
   const { appStore } = useStores();
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(1);
-  const [appName, setAppName] = useState('');
-  const [appDesc, setAppDesc] = useState('');
-  const [appUrl, setAppUrl] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [gitlabUrl, setGitlabUrl] = useState('');
-  const [jenkinsUrl, setJenkinsUrl] = useState('');
+  const hasInitialized = useRef(false);
+
+  useEffect(() => {
+    if (hasInitialized.current) return;
+
+    // 尝试从 sessionStorage 恢复表单状态
+    const savedFormData = sessionStorage.getItem('createAppFormData');
+    const savedStep = sessionStorage.getItem('createAppStep');
+    const savedTemplate = sessionStorage.getItem('createAppTemplate');
+
+    if (savedFormData) {
+      const formData = JSON.parse(savedFormData);
+      form.setFieldsValue(formData);
+    } else {
+      // 初始化时自动生成应用标识
+      let newAppId = appStore.generateAppId();
+      while (appStore.isAppIdExists(newAppId)) {
+        newAppId = appStore.generateAppId();
+      }
+      form.setFieldsValue({ appId: newAppId });
+    }
+
+    if (savedStep) {
+      setCurrentStep(parseInt(savedStep));
+    }
+
+    if (savedTemplate) {
+      setSelectedTemplate(savedTemplate);
+    }
+
+    hasInitialized.current = true;
+  }, [appStore, form]);
+
+  // 监听表单字段变化，实时保存
+  const handleFormChange = () => {
+    const formData = form.getFieldsValue();
+    sessionStorage.setItem('createAppFormData', JSON.stringify(formData));
+  };
+
+  // 监听步骤和模板变化
+  useEffect(() => {
+    sessionStorage.setItem('createAppStep', currentStep.toString());
+  }, [currentStep]);
+
+  useEffect(() => {
+    sessionStorage.setItem('createAppTemplate', selectedTemplate);
+  }, [selectedTemplate]);
 
   useEffect(() => {
     // 模拟从 GitLab 获取模板列表
@@ -49,21 +95,32 @@ const CreateApp = observer(() => {
     setTemplates(mockTemplates);
   }, []);
 
-  const handleNext = () => {
+  const clearFormData = () => {
+    sessionStorage.removeItem('createAppFormData');
+    sessionStorage.removeItem('createAppStep');
+    sessionStorage.removeItem('createAppTemplate');
+  };
+
+  const handleGenerateAppId = () => {
+    let newAppId = appStore.generateAppId();
+    while (appStore.isAppIdExists(newAppId)) {
+      newAppId = appStore.generateAppId();
+    }
+    form.setFieldsValue({ appId: newAppId });
+  };
+
+  const handleNext = async () => {
     if (currentStep === 1) {
-      if (!appName.trim()) {
-        alert('请输入应用名称');
-        return;
+      try {
+        await form.validateFields(['appName', 'appId', 'appUrl']);
+        if (!selectedTemplate) {
+          alert('请选择应用模板');
+          return;
+        }
+        setCurrentStep(2);
+      } catch (error) {
+        console.error('表单验证失败:', error);
       }
-      if (!appUrl.trim()) {
-        alert('请输入应用地址');
-        return;
-      }
-      if (!selectedTemplate) {
-        alert('请选择应用模板');
-        return;
-      }
-      setCurrentStep(2);
     }
   };
 
@@ -71,22 +128,42 @@ const CreateApp = observer(() => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = () => {
-    if (!gitlabUrl.trim()) {
-      alert('请输入 GitLab 地址');
-      return;
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      appStore.addApp({
+        appId: values.appId,
+        name: values.appName,
+        description: values.appDesc || '',
+        gitlabUrl: values.gitlabUrl,
+        jenkinsUrl: values.jenkinsUrl
+      });
+      clearFormData();
+      navigate('/apps');
+    } catch (error) {
+      console.error('表单验证失败:', error);
     }
-    if (!jenkinsUrl.trim()) {
-      alert('请输入 Jenkins 地址');
-      return;
+  };
+
+  const handleCancel = () => {
+    const formData = form.getFieldsValue();
+    const hasData = Object.values(formData).some(value => value && value !== '');
+
+    if (hasData || selectedTemplate) {
+      Modal.confirm({
+        title: '确认取消',
+        content: '表单中有未保存的内容，确定要取消吗？',
+        okText: '确定',
+        cancelText: '继续编辑',
+        onOk() {
+          clearFormData();
+          navigate('/apps');
+        }
+      });
+    } else {
+      clearFormData();
+      navigate('/apps');
     }
-    appStore.addApp({
-      name: appName,
-      description: appDesc,
-      gitlabUrl,
-      jenkinsUrl
-    });
-    navigate('/apps');
   };
 
   return (
@@ -115,50 +192,79 @@ const CreateApp = observer(() => {
         </div>
 
         <div className={styles.formCard}>
-          {currentStep === 1 && (
-            <>
-              <div className={styles.formSection}>
-                <h2 className={styles.sectionTitle}>基本信息</h2>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    应用名称 <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="请输入应用名称"
-                    value={appName}
-                    onChange={e => setAppName(e.target.value)}
-                  />
-                  <p className={styles.hint}>应用的唯一标识名称</p>
-                </div>
+          <Form form={form} layout="vertical" onValuesChange={handleFormChange}>
+            {currentStep === 1 && (
+              <>
+                <div className={styles.formSection}>
+                  <h2 className={styles.sectionTitle}>基本信息</h2>
+                  <Form.Item
+                    label="应用名称"
+                    name="appName"
+                    rules={[{ required: true, message: '请输入应用名称' }]}
+                    extra="应用的显示名称"
+                  >
+                    <Input placeholder="请输入应用名称" size="large" />
+                  </Form.Item>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>应用描述</label>
-                  <textarea
-                    className={styles.textarea}
-                    placeholder="请输入应用描述（可选）"
-                    rows={3}
-                    value={appDesc}
-                    onChange={e => setAppDesc(e.target.value)}
-                  />
-                  <p className={styles.hint}>简要描述应用的功能和用途</p>
-                </div>
+                  <Form.Item
+                    label="应用标识"
+                    name="appId"
+                    rules={[
+                      { required: true, message: '请输入应用标识' },
+                      { pattern: /^[a-z0-9-]{3,20}$/, message: '应用标识只能包含小写字母、数字和连字符，长度3-20位' },
+                      {
+                        validator: async (_, value) => {
+                          if (value && appStore.isAppIdExists(value)) {
+                            throw new Error('应用标识已存在');
+                          }
+                        }
+                      }
+                    ]}
+                    extra="应用的唯一标识，用于URL和系统识别"
+                  >
+                    <Input 
+                      placeholder="请输入应用标识，如：ec-platform" 
+                      size="large"
+                      addonAfter={
+                        <Button 
+                          type="link" 
+                          size="small"
+                          onClick={handleGenerateAppId}
+                          style={{ padding: '0 8px' }}
+                        >
+                          自动生成
+                        </Button>
+                      }
+                    />
+                  </Form.Item>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    应用地址 <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="https://your-app.example.com"
-                    value={appUrl}
-                    onChange={e => setAppUrl(e.target.value)}
-                  />
-                  <p className={styles.hint}>应用的访问地址</p>
+                  <Form.Item
+                    label="应用描述"
+                    name="appDesc"
+                    extra="简要描述应用的功能和用途"
+                  >
+                    <TextArea 
+                      placeholder="请输入应用描述（可选）" 
+                      rows={3}
+                      size="large"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="应用地址"
+                    name="appUrl"
+                    rules={[
+                      { required: true, message: '请输入应用地址' },
+                      { type: 'url', message: '请输入有效的URL地址' }
+                    ]}
+                    extra="应用的访问地址"
+                  >
+                    <Input 
+                      placeholder="https://your-app.example.com" 
+                      size="large"
+                    />
+                  </Form.Item>
                 </div>
-              </div>
 
               <div className={styles.formSection}>
                 <h2 className={styles.sectionTitle}>
@@ -184,49 +290,51 @@ const CreateApp = observer(() => {
                 </div>
               </div>
 
-              <div className={styles.actions}>
-                <button className={styles.nextBtn} onClick={handleNext}>
-                  下一步 →
-                </button>
-                <button className={styles.cancelBtn} onClick={() => navigate('/apps')}>
-                  取消
-                </button>
-              </div>
-            </>
-          )}
-
-          {currentStep === 2 && (
-            <>
-              <div className={styles.formSection}>
-                <h2 className={styles.sectionTitle}>配置信息</h2>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    GitLab 地址 <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="https://gitlab.com/your-project"
-                    value={gitlabUrl}
-                    onChange={e => setGitlabUrl(e.target.value)}
-                  />
-                  <p className={styles.hint}>代码仓库的 GitLab 地址</p>
+                <div className={styles.actions}>
+                  <Button type="primary" size="large" onClick={handleNext}>
+                    下一步 →
+                  </Button>
+                  <Button size="large" onClick={handleCancel}>
+                    取消
+                  </Button>
                 </div>
+              </>
+            )}
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>
-                    Jenkins 地址 <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    placeholder="https://jenkins.com/your-project"
-                    value={jenkinsUrl}
-                    onChange={e => setJenkinsUrl(e.target.value)}
-                  />
-                  <p className={styles.hint}>持续集成的 Jenkins 地址</p>
+            {currentStep === 2 && (
+              <>
+                <div className={styles.formSection}>
+                  <h2 className={styles.sectionTitle}>配置信息</h2>
+                  <Form.Item
+                    label="GitLab 地址"
+                    name="gitlabUrl"
+                    rules={[
+                      { required: true, message: '请输入 GitLab 地址' },
+                      { type: 'url', message: '请输入有效的URL地址' }
+                    ]}
+                    extra="代码仓库的 GitLab 地址"
+                  >
+                    <Input 
+                      placeholder="https://gitlab.com/your-project" 
+                      size="large"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Jenkins 地址"
+                    name="jenkinsUrl"
+                    rules={[
+                      { required: true, message: '请输入 Jenkins 地址' },
+                      { type: 'url', message: '请输入有效的URL地址' }
+                    ]}
+                    extra="持续集成的 Jenkins 地址"
+                  >
+                    <Input 
+                      placeholder="https://jenkins.com/your-project" 
+                      size="large"
+                    />
+                  </Form.Item>
                 </div>
-              </div>
 
               <div className={styles.tips}>
                 <div className={styles.tipsIcon}>💡</div>
@@ -240,16 +348,17 @@ const CreateApp = observer(() => {
                 </div>
               </div>
 
-              <div className={styles.actions}>
-                <button className={styles.submitBtn} onClick={handleSubmit}>
-                  创建应用
-                </button>
-                <button className={styles.prevBtn} onClick={handlePrev}>
-                  ← 上一步
-                </button>
-              </div>
-            </>
-          )}
+                <div className={styles.actions}>
+                  <Button type="primary" size="large" onClick={handleSubmit}>
+                    创建应用
+                  </Button>
+                  <Button size="large" onClick={handlePrev}>
+                    ← 上一步
+                  </Button>
+                </div>
+              </>
+            )}
+          </Form>
         </div>
       </div>
     </div>

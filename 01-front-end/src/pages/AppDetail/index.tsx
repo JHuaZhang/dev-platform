@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStores } from '@/stores';
 import OverviewTab from './components/OverviewTab/index';
 import IterationsTab from './components/IterationsTab/index';
@@ -9,12 +9,31 @@ import MembersTab from './components/MembersTab/index';
 import styles from './index.module.css';
 
 const AppDetail = observer(() => {
-  const { appId } = useParams();
+  const { appIdentifier } = useParams();
   const navigate = useNavigate();
   const { appStore } = useStores();
-  const [activeTab, setActiveTab] = useState('overview');
+  
+  const getStorageKey = useCallback(() => `tab-state-/apps/${appIdentifier}`, [appIdentifier]);
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedState = sessionStorage.getItem(getStorageKey());
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        return state.activeTab || 'overview';
+      } catch (e) {
+        return 'overview';
+      }
+    }
+    return 'overview';
+  });
 
-  const app = appStore.appList.find(a => a.id === Number(appId));
+  useEffect(() => {
+    const state = { activeTab };
+    sessionStorage.setItem(getStorageKey(), JSON.stringify(state));
+  }, [activeTab, getStorageKey]);
+
+  const app = appStore.getAppByAppId(appIdentifier || '');
 
   if (!app) {
     return (
@@ -32,6 +51,10 @@ const AppDetail = observer(() => {
     { key: 'pages', label: '页面列表', icon: '📄' },
     { key: 'members', label: '成员配置', icon: '👥' }
   ];
+
+  const handleTabChange = (tabKey: string) => {
+    setActiveTab(tabKey);
+  };
 
   return (
     <div className={styles.appDetail}>
@@ -55,7 +78,7 @@ const AppDetail = observer(() => {
           <button
             key={tab.key}
             className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
           >
             <span className={styles.tabIcon}>{tab.icon}</span>
             <span className={styles.tabLabel}>{tab.label}</span>
@@ -64,8 +87,8 @@ const AppDetail = observer(() => {
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'overview' && <OverviewTab appId={Number(appId)} app={app} />}
-        {activeTab === 'iterations' && <IterationsTab appId={Number(appId)} />}
+        {activeTab === 'overview' && <OverviewTab appId={app.id} app={app} />}
+        {activeTab === 'iterations' && <IterationsTab appId={app.id} />}
         {activeTab === 'pages' && <PagesTab />}
         {activeTab === 'members' && <MembersTab />}
       </div>

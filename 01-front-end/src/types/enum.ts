@@ -5,14 +5,13 @@ export enum IterationStatus {
   FAILED = 'failed'
 }
 
-export namespace IterationStatus {
-  export const config: {
-    [key in IterationStatus]: {
-      label: string;
-      color: string;
-      bgColor: string;
-    };
-  } = {
+const iterationStatusConfig: {
+  [key in IterationStatus]: {
+    label: string;
+    color: string;
+    bgColor: string;
+  };
+} = {
     [IterationStatus.PENDING]: {
       label: '待构建',
       color: '#faad14',
@@ -33,18 +32,32 @@ export namespace IterationStatus {
       color: '#f5222d',
       bgColor: 'rgba(245, 34, 45, 0.1)'
     }
-  };
+};
 
+export function getIterationStatusLabel(status: IterationStatus): string {
+  return iterationStatusConfig[status]?.label || status;
+}
+
+export function getIterationStatusColor(status: IterationStatus): string {
+  return iterationStatusConfig[status]?.color || '#8c8c8c';
+}
+
+export function getIterationStatusBgColor(status: IterationStatus): string {
+  return iterationStatusConfig[status]?.bgColor || 'rgba(140, 140, 140, 0.1)';
+}
+
+// 扩展 IterationStatus 枚举，添加静态方法
+export namespace IterationStatus {
   export function getLabel(status: IterationStatus): string {
-    return config[status]?.label || status;
+    return getIterationStatusLabel(status);
   }
-
+  
   export function getColor(status: IterationStatus): string {
-    return config[status]?.color || '#8c8c8c';
+    return getIterationStatusColor(status);
   }
-
+  
   export function getBgColor(status: IterationStatus): string {
-    return config[status]?.bgColor || 'rgba(140, 140, 140, 0.1)';
+    return getIterationStatusBgColor(status);
   }
 }
 
@@ -55,12 +68,11 @@ export enum PipelineStageStatus {
   FAILED = 'failed'
 }
 
-export namespace PipelineStageStatus {
-  export const config: {
-    [key in PipelineStageStatus]: {
-      color: string;
-    };
-  } = {
+const pipelineStageStatusConfig: {
+  [key in PipelineStageStatus]: {
+    color: string;
+  };
+} = {
     [PipelineStageStatus.PENDING]: {
       color: '#8c8c8c'
     },
@@ -73,9 +85,15 @@ export namespace PipelineStageStatus {
     [PipelineStageStatus.FAILED]: {
       color: '#f5222d'
     }
-  };
+};
 
+export function getPipelineStageStatusColor(status: PipelineStageStatus): string {
+  return pipelineStageStatusConfig[status]?.color || '#8c8c8c';
+}
+
+// 扩展 PipelineStageStatus 枚举，添加静态方法
+export namespace PipelineStageStatus {
   export function getColor(status: PipelineStageStatus): string {
-    return config[status]?.color || '#8c8c8c';
+    return getPipelineStageStatusColor(status);
   }
 }

@@ -1,19 +1,27 @@
 .createApp {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   background: #ffffff;
   padding: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 24px 40px;
+  gap: 20px;
+  padding: 16px 40px;
   background: #f7fafc;
   border-bottom: 1px solid #e2e8f0;
+  position: fixed;
+  top: 56px;
+  left: 240px;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
 .backBtn {
@@ -39,14 +47,14 @@
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: #2d3748;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: #718096;
 }
 
@@ -54,6 +62,8 @@
   flex: 1;
   padding: 32px 40px;
   width: 100%;
+  overflow-y: auto;
+  margin-top: 128px;
 }
 
 .steps {

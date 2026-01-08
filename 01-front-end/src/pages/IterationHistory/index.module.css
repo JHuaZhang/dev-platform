@@ -3,15 +3,25 @@
   height: 100%;
   background: #ffffff;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 24px 40px;
+  gap: 20px;
+  padding: 16px 40px;
   background: #f7fafc;
   border-bottom: 1px solid #e2e8f0;
+  position: fixed;
+  top: 56px;
+  left: 240px;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
 .backBtn {
@@ -40,33 +50,36 @@
 }
 
 .appIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
 }
 
 .appName {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: #2d3748;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .appDesc {
-  font-size: 13px;
+  font-size: 12px;
   color: #718096;
 }
 
 .content {
   padding: 32px 40px;
   background: #ffffff;
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 128px;
 }
 
 .sectionTitle {
