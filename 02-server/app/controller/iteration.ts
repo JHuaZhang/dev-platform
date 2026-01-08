@@ -2,24 +2,24 @@ import { Controller } from 'egg';
 
 export default class IterationController extends Controller {
   public async list() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { page = 1, pageSize = 10, appId } = ctx.query;
 
-    let sql = 'SELECT * FROM iterations WHERE 1=1';
-    const params: any[] = [];
-
-    if (appId) {
-      sql += ' AND app_id = ?';
-      params.push(appId);
-    }
-
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     const pageNum = typeof page === 'string' ? parseInt(page) : page;
     const pageSizeNum = typeof pageSize === 'string' ? parseInt(pageSize) : pageSize;
-    params.push(pageSizeNum, (pageNum - 1) * pageSizeNum);
 
-    const list = await app.mysql.query(sql, params);
-    const total = await app.mysql.count('iterations', appId ? { app_id: appId } : {});
+    const query: any = {};
+    if (appId) {
+      query.appId = appId;
+    }
+
+    const list = await ctx.model.Iteration.find(query)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * pageSizeNum)
+      .limit(pageSizeNum)
+      .lean();
+
+    const total = await ctx.model.Iteration.countDocuments(query);
 
     ctx.helper.success({
       list,
@@ -30,35 +30,33 @@ export default class IterationController extends Controller {
   }
 
   public async create() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { appId, version, branch, commitId, description } = ctx.request.body;
 
     ctx.validate({
-      appId: { type: 'number', required: true },
+      appId: { type: 'string', required: true },
       version: { type: 'string', required: true },
       branch: { type: 'string', required: true },
       commitId: { type: 'string', required: true },
     });
 
-    const result = await app.mysql.insert('iterations', {
-      app_id: appId,
+    const iteration = await ctx.model.Iteration.create({
+      appId,
       version,
       branch,
-      commit_id: commitId,
+      commitId,
       description,
       status: 'pending',
-      created_at: new Date(),
-      updated_at: new Date(),
     });
 
-    ctx.helper.success({ id: result.insertId }, '创建成功');
+    ctx.helper.success({ id: iteration._id }, '创建成功');
   }
 
   public async show() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
 
-    const iteration = await app.mysql.get('iterations', { id });
+    const iteration = await ctx.model.Iteration.findById(id).lean();
 
     if (!iteration) {
       ctx.helper.error('迭代不存在', 404);

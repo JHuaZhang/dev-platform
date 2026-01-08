@@ -2,24 +2,27 @@ import { Controller } from 'egg';
 
 export default class AppController extends Controller {
   public async list() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { page = 1, pageSize = 10, keyword } = ctx.query;
 
-    let sql = 'SELECT * FROM apps WHERE 1=1';
-    const params: any[] = [];
-
-    if (keyword) {
-      sql += ' AND (name LIKE ? OR description LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
-    }
-
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     const pageNum = typeof page === 'string' ? parseInt(page) : page;
     const pageSizeNum = typeof pageSize === 'string' ? parseInt(pageSize) : pageSize;
-    params.push(pageSizeNum, (pageNum - 1) * pageSizeNum);
 
-    const list = await app.mysql.query(sql, params);
-    const total = await app.mysql.count('apps');
+    const query: any = {};
+    if (keyword) {
+      query.$or = [
+        { name: new RegExp(keyword as string, 'i') },
+        { description: new RegExp(keyword as string, 'i') },
+      ];
+    }
+
+    const list = await ctx.model.App.find(query)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * pageSizeNum)
+      .limit(pageSizeNum)
+      .lean();
+
+    const total = await ctx.model.App.countDocuments(query);
 
     ctx.helper.success({
       list,
@@ -30,7 +33,7 @@ export default class AppController extends Controller {
   }
 
   public async create() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { name, description, repository, type } = ctx.request.body;
 
     ctx.validate({
@@ -40,96 +43,59 @@ export default class AppController extends Controller {
       type: { type: 'string', required: true },
     });
 
-    const result = await app.mysql.insert('apps', {
+    const app = await ctx.model.App.create({
       name,
       description,
       repository,
       type,
-      created_at: new Date(),
-      updated_at: new Date(),
     });
 
-    ctx.body = {
-      code: 200,
-      message: '创建成功',
-      data: { id: result.insertId },
-    };
+    ctx.helper.success({ id: app._id }, '创建成功');
   }
 
   public async show() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
 
-    const app_data = await app.mysql.get('apps', { id });
+    const app = await ctx.model.App.findById(id).lean();
 
-    if (!app_data) {
-      ctx.body = {
-        code: 404,
-        message: '应用不存在',
-        data: null,
-      };
-      ctx.status = 404;
+    if (!app) {
+      ctx.helper.error('应用不存在', 404);
       return;
     }
 
-    ctx.body = {
-      code: 200,
-      message: '操作成功',
-      data: app_data,
-    };
+    ctx.helper.success(app);
   }
 
   public async update() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
     const { name, description, repository, type } = ctx.request.body;
 
-    const result = await app.mysql.update('apps', {
-      id,
-      name,
-      description,
-      repository,
-      type,
-      updated_at: new Date(),
-    });
+    const result = await ctx.model.App.updateOne(
+      { _id: id },
+      { name, description, repository, type }
+    );
 
-    if (result.affectedRows === 0) {
-      ctx.body = {
-        code: 400,
-        message: '更新失败',
-        data: null,
-      };
-      ctx.status = 400;
+    if ((result as any).modifiedCount === 0) {
+      ctx.helper.error('更新失败', 400);
       return;
     }
 
-    ctx.body = {
-      code: 200,
-      message: '更新成功',
-      data: null,
-    };
+    ctx.helper.success(null, '更新成功');
   }
 
   public async destroy() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
 
-    const result = await app.mysql.delete('apps', { id });
+    const result = await ctx.model.App.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
-      ctx.body = {
-        code: 400,
-        message: '删除失败',
-        data: null,
-      };
-      ctx.status = 400;
+    if ((result as any).deletedCount === 0) {
+      ctx.helper.error('删除失败', 400);
       return;
     }
 
-    ctx.body = {
-      code: 200,
-      message: '删除成功',
-      data: null,
-    };
+    ctx.helper.success(null, '删除成功');
   }
 }

@@ -11,7 +11,7 @@ export default class AuthController extends Controller {
       password: { type: 'string', required: true },
     });
 
-    const user = await app.mysql.get('users', { username });
+    const user = await ctx.model.User.findOne({ username }).lean();
 
     if (!user) {
       ctx.helper.error('用户不存在', 404);
@@ -26,7 +26,7 @@ export default class AuthController extends Controller {
     }
 
     const token = app.jwt.sign(
-      { id: user.id, username: user.username },
+      { id: user._id, username: user.username },
       app.config.jwt.secret,
       { expiresIn: '7d' }
     );
@@ -34,7 +34,7 @@ export default class AuthController extends Controller {
     ctx.helper.success({
       token,
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         nickname: user.nickname,
         email: user.email,
@@ -43,7 +43,7 @@ export default class AuthController extends Controller {
   }
 
   public async register() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { username, password, nickname, email } = ctx.request.body;
 
     ctx.validate({
@@ -53,7 +53,7 @@ export default class AuthController extends Controller {
       email: { type: 'email', required: true },
     });
 
-    const existUser = await app.mysql.get('users', { username });
+    const existUser = await ctx.model.User.findOne({ username });
     if (existUser) {
       ctx.helper.error('用户名已存在', 400);
       return;
@@ -61,15 +61,13 @@ export default class AuthController extends Controller {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await app.mysql.insert('users', {
+    const user = await ctx.model.User.create({
       username,
       password: hashedPassword,
       nickname,
       email,
-      created_at: new Date(),
-      updated_at: new Date(),
     });
 
-    ctx.helper.success({ id: result.insertId }, '注册成功');
+    ctx.helper.success({ id: user._id }, '注册成功');
   }
 }

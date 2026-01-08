@@ -18,16 +18,14 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
     allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH',
   };
 
-  config.mysql = {
+  config.mongoose = {
     client: {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || '3306',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_DATABASE || 'publish_platform',
+      url: process.env.MONGODB_URL || 'mongodb://localhost:27017/publish_platform',
+      options: {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      },
     },
-    app: true,
-    agent: false,
   };
 
   config.redis = {

@@ -3,24 +3,28 @@ import * as bcrypt from 'bcryptjs';
 
 export default class UserController extends Controller {
   public async list() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { page = 1, pageSize = 10, keyword } = ctx.query;
 
-    let sql = 'SELECT id, username, nickname, email, created_at FROM users WHERE 1=1';
-    const params: any[] = [];
-
-    if (keyword) {
-      sql += ' AND (username LIKE ? OR nickname LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
-    }
-
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     const pageNum = typeof page === 'string' ? parseInt(page) : page;
     const pageSizeNum = typeof pageSize === 'string' ? parseInt(pageSize) : pageSize;
-    params.push(pageSizeNum, (pageNum - 1) * pageSizeNum);
 
-    const list = await app.mysql.query(sql, params);
-    const total = await app.mysql.count('users');
+    const query: any = {};
+    if (keyword) {
+      query.$or = [
+        { username: new RegExp(keyword as string, 'i') },
+        { nickname: new RegExp(keyword as string, 'i') },
+      ];
+    }
+
+    const list = await ctx.model.User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * pageSizeNum)
+      .limit(pageSizeNum)
+      .lean();
+
+    const total = await ctx.model.User.countDocuments(query);
 
     ctx.helper.success({
       list,
@@ -31,7 +35,7 @@ export default class UserController extends Controller {
   }
 
   public async create() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { username, password, nickname, email } = ctx.request.body;
 
     ctx.validate({
@@ -43,31 +47,27 @@ export default class UserController extends Controller {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await app.mysql.insert('users', {
+    const user = await ctx.model.User.create({
       username,
       password: hashedPassword,
       nickname,
       email,
-      created_at: new Date(),
-      updated_at: new Date(),
     });
 
-    ctx.helper.success({ id: result.insertId }, '创建成功');
+    ctx.helper.success({ id: user._id }, '创建成功');
   }
 
   public async update() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
     const { nickname, email } = ctx.request.body;
 
-    const result = await app.mysql.update('users', {
-      id,
-      nickname,
-      email,
-      updated_at: new Date(),
-    });
+    const result = await ctx.model.User.updateOne(
+      { _id: id },
+      { nickname, email }
+    );
 
-    if (result.affectedRows === 0) {
+    if ((result as any).modifiedCount === 0) {
       ctx.helper.error('更新失败', 400);
       return;
     }
@@ -76,12 +76,12 @@ export default class UserController extends Controller {
   }
 
   public async destroy() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
 
-    const result = await app.mysql.delete('users', { id });
+    const result = await ctx.model.User.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if ((result as any).deletedCount === 0) {
       ctx.helper.error('删除失败', 400);
       return;
     }

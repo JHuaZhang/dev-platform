@@ -2,67 +2,58 @@ import { Controller } from 'egg';
 
 export default class PermissionController extends Controller {
   public async list() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { userId, appId } = ctx.query;
 
-    let sql = `
-      SELECT p.*, u.username, u.nickname, a.name as app_name
-      FROM permissions p
-      LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN apps a ON p.app_id = a.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-
+    const query: any = {};
     if (userId) {
-      sql += ' AND p.user_id = ?';
-      params.push(userId);
+      query.userId = userId;
     }
-
     if (appId) {
-      sql += ' AND p.app_id = ?';
-      params.push(appId);
+      query.appId = appId;
     }
 
-    const list = await app.mysql.query(sql, params);
+    const list = await ctx.model.Permission.find(query)
+      .populate('userId', 'username nickname')
+      .populate('appId', 'name')
+      .lean();
 
     ctx.helper.success({ list });
   }
 
   public async grant() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { userId, appId, role } = ctx.request.body;
 
     ctx.validate({
-      userId: { type: 'number', required: true },
-      appId: { type: 'number', required: true },
+      userId: { type: 'string', required: true },
+      appId: { type: 'string', required: true },
       role: { type: 'enum', values: ['owner', 'developer', 'viewer'], required: true },
     });
 
-    const exist = await app.mysql.get('permissions', { user_id: userId, app_id: appId });
+    const exist = await ctx.model.Permission.findOne({ userId, appId });
 
     if (exist) {
       ctx.helper.error('权限已存在', 400);
       return;
     }
 
-    const result = await app.mysql.insert('permissions', {
-      user_id: userId,
-      app_id: appId,
+    const permission = await ctx.model.Permission.create({
+      userId,
+      appId,
       role,
-      created_at: new Date(),
     });
 
-    ctx.helper.success({ id: result.insertId }, '授权成功');
+    ctx.helper.success({ id: permission._id }, '授权成功');
   }
 
   public async revoke() {
-    const { ctx, app } = this;
+    const { ctx } = this;
     const { id } = ctx.params;
 
-    const result = await app.mysql.delete('permissions', { id });
+    const result = await ctx.model.Permission.deleteOne({ _id: id });
 
-    if (result.affectedRows === 0) {
+    if ((result as any).deletedCount === 0) {
       ctx.helper.error('删除失败', 400);
       return;
     }

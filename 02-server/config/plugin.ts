@@ -1,12 +1,12 @@
 import { EggPlugin } from 'egg';
 
 const plugin: EggPlugin = {
-  mysql: {
+  mongoose: {
     enable: true,
-    package: 'egg-mysql',
+    package: 'egg-mongoose',
   },
   redis: {
-    enable: true,
+    enable: false,
     package: 'egg-redis',
   },
   jwt: {
